@@ -1,8 +1,9 @@
 Slack = require 'slack-client'
 jsonfile = require 'jsonfile'
-{Message} = require './message'
 Handlers = require './handlers'
 handlers = Handlers.handlers
+
+{Message} = require './message'
 
 # List of available services
 handler_services = h.service_name for h in handlers
