@@ -5,9 +5,6 @@ handlers = Handlers.handlers
 
 {Message} = require './message'
 
-# List of available services
-handler_services = h.service_name for h in handlers
-
 creds = jsonfile.readFileSync('./creds.json')
 
 # Config settings for slack bot
