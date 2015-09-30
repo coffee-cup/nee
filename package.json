@@ -1,0 +1,16 @@
+{
+  "name": "nee",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bot.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jsonfile": "^2.2.2",
+    "node-persist": "0.0.6",
+    "slack-client": "^1.4.1"
+  }
+}
