@@ -27,9 +27,8 @@ handleMessage = (message) ->
   h.handler_func message for h in matching_handlers
 
 # First thing to read message
-# Checks if it is a link,
-# if it is check the service_name and see if we have
-# handler for that, then call handler_func passing in message
+# Checks if it is a link
+# if it pass, pass message to handlers
 readMessage = (slack_message) ->
   if slack_message.type is 'message' and slack_message.message
     m = slack_message.message
