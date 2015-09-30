@@ -28,7 +28,7 @@ handleMessage = (message) ->
 
 # First thing to read message
 # Checks if it is a link
-# if it pass, pass message to handlers
+# if it is, pass message to handlers
 readMessage = (slack_message) ->
   if slack_message.type is 'message' and slack_message.message
     m = slack_message.message
