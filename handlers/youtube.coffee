@@ -107,7 +107,7 @@ class YoutubeHandler extends Handler
       return
 
     if @connections.length > 0
-      s = 'Your Conections\n'
+      s = 'Your Connections\n'
       addToS = (i, c) =>
         s += (i+1) + ' : ' + '#' + c.channel_name + ' -> ' + c.playlist_name + '\n'
       addToS i, c for c, i in @connections
