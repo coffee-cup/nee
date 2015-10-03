@@ -196,7 +196,12 @@ class YoutubeHandler extends Handler
     message = 'Help for ' + @service_name + ' handler'
     message = '
       Help for YouTube handler \n
-      list, l
+      [l] List authenticated users playlists \n
+      [c] List all connections \n
+      [m index|playlist] make a connection to index or playlist name \n
+      [r index|playlist] remove a connection to index or playlist name \n
+      [a] authenticate with youtube \n
+      [h] show help \n
     '
     channel.send message
 
