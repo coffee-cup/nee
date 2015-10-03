@@ -60,7 +60,7 @@ readMessage = (slack_message, user, c) ->
   else
     t = slack_message.text
     in_chat_name = '<@' + cf.user_id + '>'
-    if t.startsWith in_chat_name
+    if t.indexOf in_chat_name isnt -1
       cmd = t.replace in_chat_name + ' ', ''
       cmds = cmd.split ' '
       handleCommand cmds, c
