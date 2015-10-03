@@ -22,7 +22,6 @@ oauth_options =
   client_id: creds.YOUTUBE_CLIENT_ID
   client_secret: creds.YOUTUBE_CLIENT_SECRET
   redirect_url: creds.YOUTUBE_REDIRECT_URIS[0]
-oauth = Youtube.authenticate oauth_options
 
 # Start server to send oauth redirects to
 PORT = 5000
@@ -45,21 +44,44 @@ class YoutubeHandler extends Handler
   cmd: 'y'
   playlists: []
   connections: []
+  @creds: null
 
   constructor: () ->
+    @get_credentials()
+    if @creds and @creds.refresh_token and @creds.access_token
+      oauth_options.refresh_token = @creds.refresh_token
+      oauth_options.access_token = @creds.access_token
+
     @oauth = Youtube.authenticate oauth_options
-    token = storage.getItemSync(YOUTUBE_KEY)
-    if token
-      @oauth.setCredentials token
+
+    # Get user playlists if already have token
+    if @is_auth
       @get_playlists()
 
     cons = storage.getItemSync(YOUTUBE_CONNECTIONS)
     if cons
       @connections = cons
 
+  # Gets credentials from persit if they exist
+  get_credentials: () ->
+    creds = storage.getItemSync(YOUTUBE_KEY)
+    if creds and creds.access_token and creds.refresh_token
+      console.log 'Found creds in persist'
+      console.log creds
+      @creds = creds
+
+
   # Saves current set of connections to storage
   save_connections: () =>
     storage.setItem(YOUTUBE_CONNECTIONS, @connections)
+
+  # Removes current tokens from persist
+  remove_tokens: () =>
+    console.log 'removing tokens from persist for ' + @service_name
+    storage.removeItemSync(YOUTUBE_KEY)
+    @oauth.credentials.refresh_token = null
+    @oauth.credentials.access_token = null
+    @creds = null
 
   # Gets youtube playlists and set obj var
   get_playlists: () =>
@@ -69,7 +91,8 @@ class YoutubeHandler extends Handler
       maxResults: 50
     Youtube.playlists.list params, (err, data) =>
       if err
-        console.log err
+        if err.code is 401
+          @remove_tokens()
         return
       if data.items
         @playlists = (new Playlist item for item in data.items)
@@ -77,7 +100,8 @@ class YoutubeHandler extends Handler
   # Lists playlists and index to channel
   list_playlists: (channel) =>
     if not @is_auth()
-      channel.send 'Not authenticated with ' + @service_name + '. Run @nee a'
+      msg = 'Not authenticated with ' + @service_name + '. Run @nee ' + @cmd + ' a'
+      channel.send msg
       return
 
     params =
@@ -86,7 +110,10 @@ class YoutubeHandler extends Handler
       maxResults: 50
     Youtube.playlists.list params, (err, data) =>
       if err
-        console.log err
+        if err.code is 401
+          @remove_tokens()
+          msg = 'Not authenticated with ' + @service_name + '. Run @nee ' + @cmd + ' a'
+          channel.send msg
         return
       if data.items
         @playlists = (new Playlist item for item in data.items)
@@ -103,7 +130,7 @@ class YoutubeHandler extends Handler
   # List all connections for this handler to channel
   list_connections: (channel) =>
     if not @is_auth()
-      channel.send 'Not authenticated with ' + @service_name + '. Run @nee a'
+      channel.send 'Not authenticated with ' + @service_name + '. Run @nee ' + @cmd + ' a'
       return
 
     if @connections.length > 0
@@ -218,6 +245,8 @@ class YoutubeHandler extends Handler
       else if cmds[0] is 'r'
         rest = cmds.splice 1, cmds.length
         @remove_connection rest, channel
+      else if cmds[0] is 'a'
+        @start_auth channel
       else if cmds[0] is 'h'
         @show_help channel
     else
@@ -249,15 +278,19 @@ class YoutubeHandler extends Handler
       t_auth.getToken code, (err, tokens) =>
         if err
           res.status 500
+          console.log err
           return res.send 'Error getting tokens'
 
         # success!!
         t_auth.setCredentials tokens
+        @creds = tokens
         storage.setItem(YOUTUBE_KEY, tokens)
         console.log 'got tokens for ' + t_name
+        console.log tokens
         channel.send 'You have authenticated with ' + t_name + '!'
         get_p()
         return res.send 'got tokens!'
+
     url = @oauth.generateAuthUrl {access_type: 'offline', scope: scope}
     response = 'Please authenticate ' + @service_name + '\n' + url
     channel.send response
