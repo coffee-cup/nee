@@ -8,4 +8,4 @@ s = new SoundcloudHandler
 
 
 # List of handlers for messages
-exports.handlers = [y, s]
+exports.handlers = [y]
