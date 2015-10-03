@@ -22,7 +22,6 @@ slack = new Slack(cf.token, cf.autoReconnect, cf.autoMark)
 authorizeHandlers = (channel) ->
   h.start_auth channel for h in handlers
 
-
 # Calls handler with message if it is authed
 callHandler = (h, message, channel) ->
   if h.is_auth()
