@@ -2,8 +2,8 @@ jsonfile = require 'jsonfile'
 Lien = require 'lien'
 Express = require 'express'
 app = new Express
-Opn = require 'opn'
 Youtube = require 'youtube-api'
+refresh = require '../refresh_token'
 
 {Playlist} = require '../playlist'
 {Handler} = require '../handler'
@@ -67,7 +67,7 @@ class YoutubeHandler extends Handler
     creds = storage.getItemSync(YOUTUBE_KEY)
     if creds and creds.access_token and creds.refresh_token
       console.log 'Found creds in persist'
-      console.log creds
+      # console.log creds
       @creds = creds
 
 
@@ -83,8 +83,24 @@ class YoutubeHandler extends Handler
     @oauth.credentials.access_token = null
     @creds = null
 
+  # Trys to refresh the access token with refresh token
+  # Returns true if success full
+  refresh_token: (callback) =>
+    console.log 'refreshing token'
+    if @creds and @creds.refresh_token
+      refresh @creds.refresh_token, oauth_options.client_id, oauth_options.client_secret, (err, json, res) =>
+        if err
+          console.log err
+          return
+        if json.accessToken
+          console.log 'got new access_token: ' + json.accessToken
+          @creds.access_token = json.accessToken
+          @oauth.setCredentials @creds
+          storage.setItem(YOUTUBE_KEY, @creds)
+          callback()
+
   # Gets youtube playlists and set obj var
-  get_playlists: () =>
+  get_playlists: (try_refresh=true) =>
     params =
       part: 'snippet'
       mine: true
@@ -92,13 +108,16 @@ class YoutubeHandler extends Handler
     Youtube.playlists.list params, (err, data) =>
       if err
         if err.code is 401
-          @remove_tokens()
+          if try_refresh
+            @refresh_token get_playlists, false
+          else
+            @remove_tokens()
         return
       if data.items
         @playlists = (new Playlist item for item in data.items)
 
   # Lists playlists and index to channel
-  list_playlists: (channel) =>
+  list_playlists: (channel, try_refresh=true) =>
     if not @is_auth()
       msg = 'Not authenticated with ' + @service_name + '. Run @nee ' + @cmd + ' a'
       channel.send msg
@@ -111,10 +130,15 @@ class YoutubeHandler extends Handler
     Youtube.playlists.list params, (err, data) =>
       if err
         if err.code is 401
-          @remove_tokens()
-          msg = 'Not authenticated with ' + @service_name + '. Run @nee ' + @cmd + ' a'
-          channel.send msg
+          if try_refresh
+            @refresh_token =>
+              @list_playlists channel, false
+          else
+            @remove_tokens()
+            msg = 'Not authenticated with ' + @service_name + '. Run @nee ' + @cmd + ' a'
+            channel.send msg
         return
+
       if data.items
         @playlists = (new Playlist item for item in data.items)
 
@@ -296,7 +320,7 @@ class YoutubeHandler extends Handler
     channel.send response
 
   # Adds link from message to playlist in connection
-  add_link_to_connection: (channel, message, connection) ->
+  add_link_to_connection: (channel, message, connection, try_refresh=true) ->
     video_id = (message.link.split 'v=')[1]
     amperPos = video_id.indexOf '&'
     if amperPos isnt -1
@@ -313,7 +337,14 @@ class YoutubeHandler extends Handler
 
     Youtube.playlistItems.insert params, (err, data) =>
       if err
-        console.log err
+        if err.code is 401
+          if try_refresh
+            @refresh_token =>
+              @add_link_to_connection channel, message, connection, false
+          else
+            @remove_tokens()
+            msg = 'Not authenticated with ' + @service_name + '. Run @nee ' + @cmd + ' a'
+            channel.send msg
         return
       console.log 'Added ' + video_id + ' to ' + connection.playlist_name
 
