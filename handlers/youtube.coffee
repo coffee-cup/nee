@@ -322,7 +322,7 @@ class YoutubeHandler extends Handler
   # Adds link from message to playlist in connection
   add_link_to_connection: (channel, message, connection, try_refresh=true) ->
     video_id = (message.link.split 'v=')[1]
-    if video_id
+    if video_id && video_id.indexOf
       amperPos = video_id.indexOf '&'
       if amperPos isnt -1
         video_id = video_id.substring 0, amperPos
