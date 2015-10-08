@@ -108,8 +108,8 @@ class YoutubeHandler extends Handler
     Youtube.playlists.list params, (err, data) =>
       if err
         if err.code is 401
-          if try_refresh
-            @refresh_token get_playlists, false
+          if try_refresh && @get_playlists
+            @refresh_token @get_playlists, false
           else
             @remove_tokens()
         return
@@ -322,31 +322,32 @@ class YoutubeHandler extends Handler
   # Adds link from message to playlist in connection
   add_link_to_connection: (channel, message, connection, try_refresh=true) ->
     video_id = (message.link.split 'v=')[1]
-    amperPos = video_id.indexOf '&'
-    if amperPos isnt -1
-      video_id = video_id.substring 0, amperPos
+    if video_id
+      amperPos = video_id.indexOf '&'
+      if amperPos isnt -1
+        video_id = video_id.substring 0, amperPos
 
-    params =
-      part: 'snippet'
-      resource:
-        snippet:
-          playlistId: connection.playlist_id
-          resourceId:
-            kind: 'youtube#video'
-            videoId: video_id
+      params =
+        part: 'snippet'
+        resource:
+          snippet:
+            playlistId: connection.playlist_id
+            resourceId:
+              kind: 'youtube#video'
+              videoId: video_id
 
-    Youtube.playlistItems.insert params, (err, data) =>
-      if err
-        if err.code is 401
-          if try_refresh
-            @refresh_token =>
-              @add_link_to_connection channel, message, connection, false
-          else
-            @remove_tokens()
-            msg = 'Not authenticated with ' + @service_name + '. Run @nee ' + @cmd + ' a'
-            channel.send msg
-        return
-      console.log 'Added ' + video_id + ' to ' + connection.playlist_name
+      Youtube.playlistItems.insert params, (err, data) =>
+        if err
+          if err.code is 401
+            if try_refresh
+              @refresh_token =>
+                @add_link_to_connection channel, message, connection, false
+            else
+              @remove_tokens()
+              msg = 'Not authenticated with ' + @service_name + '. Run @nee ' + @cmd + ' a'
+              channel.send msg
+          return
+        console.log 'Added ' + video_id + ' to ' + connection.playlist_name
 
   # A youtube link was added to the channel
   handler_func: (message, channel) ->
