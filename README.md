@@ -11,8 +11,8 @@ Handlers need to be authenticated before use, which can be done with `@nee a`
 **cmd** | **desc**
 --- | --- | ---
 @nee a | Authenticate all handlers
-@nee y a [index|playlist] | Authenticate with Youtube
+@nee y a | Authenticate with Youtube
 @nee y l | List authenicated users playlists
 @nee y c | List all connections
-@nee y m [index|playlist] | Make a connection to index or playlist name
-@nee y r [index|playlist] | Remove a connection to index or playlist name
+@nee y m index/playlist | Make a connection to index or playlist name
+@nee y r index/playlist | Remove a connection to index or playlist name
